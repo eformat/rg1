@@ -32,8 +32,8 @@ pub struct Args {
     pub invert_match: bool,
 
     /// Candidate strategy: keywords (fast alternation regex from the description)
-    /// or all (judge every record)
-    #[arg(long = "prefilter", value_enum, required = true)]
+    /// or all (judge every record). Defaults to keywords.
+    #[arg(long = "prefilter", value_enum, default_value = "keywords")]
     pub prefilter: PrefilterMode,
 
     /// Paragraph input: records are blank-line-separated paragraphs
@@ -364,9 +364,10 @@ mod tests {
     }
 
     #[test]
-    fn requires_prefilter() {
-        let a = Args::try_parse_from(["rg1", "desc"]);
-        assert!(a.is_err());
+    fn prefilter_defaults_to_keywords() {
+        let a = Args::parse_from(["rg1", "desc"]);
+        assert_eq!(a.prefilter, PrefilterMode::Keywords);
+        assert!(a.validate().is_ok());
     }
 
     #[test]

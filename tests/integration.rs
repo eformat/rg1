@@ -156,10 +156,32 @@ fn keywords_prefilter_finds_and_exits_zero() {
 }
 
 #[test]
-fn prefilter_required_flag() {
-    let r = run(&["some description", "."], &[], None);
-    assert_ne!(r.code, 0);
-    assert!(r.stderr.contains("prefilter"), "stderr: {}", r.stderr);
+fn prefilter_defaults_to_keywords() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let server = mock_server(&rt, "needle");
+    let (_c, cache_env) = fresh_cache();
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("a.txt"), "has the needle here\nnothing to see\n").unwrap();
+    // No --prefilter flag: defaults to keywords (only the needle line judged).
+    let r = run(
+        &[
+            "needle in the haystack",
+            "--api",
+            &server.uri(),
+            dir.path().to_str().unwrap(),
+        ],
+        &cache_env,
+        None,
+    );
+    assert_eq!(r.code, 0, "stderr: {}", r.stderr);
+    assert!(r.stdout.contains("has the needle here"), "stdout: {}", r.stdout);
+    assert!(!r.stdout.contains("nothing to see"));
+    let received = rt.block_on(async { server.received_requests().await }).unwrap();
+    assert_eq!(received.len(), 1);
+    let body: Value = serde_json::from_slice(&received[0].body).unwrap();
+    let states = body["states"].as_array().unwrap();
+    assert_eq!(states.len(), 1, "default prefilter=keywords: only the needle line is a candidate");
+    assert!(states[0]["state"].as_str().unwrap().contains("needle"));
 }
 
 #[test]

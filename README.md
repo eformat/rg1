@@ -30,9 +30,9 @@ description ──▶ keyword regex ──▶ ripgrep engine ──▶ candidate
    "a greeting"   (?i)greeting     (fast, local)      (batched)      (one call/record)   threshold       (grep-style)
 ```
 
-1. **Candidates.** `--prefilter=keywords` derives a case-insensitive keyword
-   alternation from the description and lets ripgrep's engine find candidate
-   lines (fast and cheap; misses matches with zero lexical overlap).
+1. **Candidates.** `--prefilter=keywords` (the default) derives a case-insensitive
+   keyword alternation from the description and lets ripgrep's engine find
+   candidate lines (fast and cheap; misses matches with zero lexical overlap).
    `--prefilter=all` judges every record.
 2. **Judge.** Candidates are batched (≤1024 states/request) and sent to the
    decision engine as `noul` questions — one call per record regardless of how
@@ -97,7 +97,7 @@ The pattern is a description; PATHs are files or directories (default: stdin;
 
 | Flag | Meaning |
 |---|---|
-| `--prefilter keywords\|all` | **required**; candidate strategy |
+| `--prefilter keywords\|all` | candidate strategy (default `keywords`) |
 | `-e DESC` | additional description (repeatable; all judged in one call) |
 | `--all` | all descriptions must match (min instead of max of probabilities) |
 | `-p, --threshold F` | match threshold (default 0.5) |
