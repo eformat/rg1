@@ -51,7 +51,9 @@ pub fn jsonl_records(
                 Ok(v) => match field_value(&v, f).and_then(json_leaf_string) {
                     Some(s) => s,
                     None => {
-                        note(&format!("line {lineno}: field '{f}' missing or not a scalar; skipping"));
+                        note(&format!(
+                            "line {lineno}: field '{f}' missing or not a scalar; skipping"
+                        ));
                         p.errors += 1;
                         continue;
                     }
@@ -101,7 +103,9 @@ pub fn csv_records(
             Some(f) => match csv_field(&row, &headers, f) {
                 Some(s) => s,
                 None => {
-                    note(&format!("csv row at line {lineno}: field '{f}' missing; skipping"));
+                    note(&format!(
+                        "csv row at line {lineno}: field '{f}' missing; skipping"
+                    ));
                     p.errors += 1;
                     continue;
                 }
@@ -157,6 +161,9 @@ mod tests {
             csv_field(&row, &headers, "user.email"),
             Some("a@example.com".to_string())
         );
-        assert_eq!(csv_field(&row, &headers, "2"), Some("a@example.com".to_string()));
+        assert_eq!(
+            csv_field(&row, &headers, "2"),
+            Some("a@example.com".to_string())
+        );
     }
 }

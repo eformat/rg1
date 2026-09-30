@@ -44,7 +44,11 @@ impl Respond for DecideLaya {
         if let Some(states) = body.get("states").and_then(|s| s.as_array()) {
             let mut results = Vec::new();
             for s in states {
-                let id = s.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let id = s
+                    .get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
                 let text = s.get("state").and_then(|v| v.as_str()).unwrap_or("");
                 results.push(json!({"id": id, "answers": self.answers(text, n_q)}));
             }
@@ -125,7 +129,11 @@ fn keywords_prefilter_finds_and_exits_zero() {
     let server = mock_server(&rt, "needle");
     let (_c, cache_env) = fresh_cache();
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("a.txt"), "has the needle here\nnothing to see\n").unwrap();
+    std::fs::write(
+        dir.path().join("a.txt"),
+        "has the needle here\nnothing to see\n",
+    )
+    .unwrap();
     let r = run(
         &[
             "needle in the haystack",
@@ -139,7 +147,11 @@ fn keywords_prefilter_finds_and_exits_zero() {
         None,
     );
     assert_eq!(r.code, 0, "stderr: {}", r.stderr);
-    assert!(r.stdout.contains("has the needle here"), "stdout: {}", r.stdout);
+    assert!(
+        r.stdout.contains("has the needle here"),
+        "stdout: {}",
+        r.stdout
+    );
     assert!(!r.stdout.contains("nothing to see"));
 }
 
@@ -179,7 +191,11 @@ fn invert_match_selects_non_matches() {
     let server = mock_server(&rt, "needle");
     let (_c, cache_env) = fresh_cache();
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("a.txt"), "has the needle here\nnothing to see\n").unwrap();
+    std::fs::write(
+        dir.path().join("a.txt"),
+        "has the needle here\nnothing to see\n",
+    )
+    .unwrap();
     let r = run(
         &[
             "needle in the haystack",
@@ -246,7 +262,9 @@ fn cache_reuse_costs_zero_http_calls() {
     let r2 = run(&args, &cache_env, None);
     assert_eq!(r2.code, 0);
     assert_eq!(r1.stdout, r2.stdout);
-    let received = rt.block_on(async { server.received_requests().await }).unwrap();
+    let received = rt
+        .block_on(async { server.received_requests().await })
+        .unwrap();
     assert_eq!(received.len(), 1, "second run must be served from cache");
     // The cache file exists.
     assert!(cache_dir.path().join("rg1/answers.v1.sqlite").exists());
@@ -277,7 +295,9 @@ fn repeated_lines_share_one_state() {
     );
     assert_eq!(r.code, 0);
     assert_eq!(r.stdout.lines().count(), 3, "stdout: {}", r.stdout);
-    let received = rt.block_on(async { server.received_requests().await }).unwrap();
+    let received = rt
+        .block_on(async { server.received_requests().await })
+        .unwrap();
     assert_eq!(received.len(), 1);
     let body: Value = serde_json::from_slice(&received[0].body).unwrap();
     let states = body["states"].as_array().unwrap();
@@ -323,7 +343,9 @@ fn retries_on_503() {
     );
     assert_eq!(r.code, 0, "stderr: {}", r.stderr);
     assert!(r.stdout.contains("has the needle here"));
-    let received = rt.block_on(async { server.received_requests().await }).unwrap();
+    let received = rt
+        .block_on(async { server.received_requests().await })
+        .unwrap();
     assert_eq!(received.len(), 2, "503 retry must issue a second request");
 }
 
@@ -356,7 +378,9 @@ fn budget_halt_stops_issuing_requests() {
         &cache_env,
         None,
     );
-    let received = rt.block_on(async { server.received_requests().await }).unwrap();
+    let received = rt
+        .block_on(async { server.received_requests().await })
+        .unwrap();
     assert!(
         received.len() < 6,
         "budget must stop issuing requests; got {}",
@@ -441,11 +465,17 @@ fn keywords_prefilter_limits_candidates() {
         None,
     );
     assert_eq!(r.code, 0);
-    let received = rt.block_on(async { server.received_requests().await }).unwrap();
+    let received = rt
+        .block_on(async { server.received_requests().await })
+        .unwrap();
     assert_eq!(received.len(), 1);
     let body: Value = serde_json::from_slice(&received[0].body).unwrap();
     let states = body["states"].as_array().unwrap();
-    assert_eq!(states.len(), 1, "only the keyword-matching line is a candidate");
+    assert_eq!(
+        states.len(),
+        1,
+        "only the keyword-matching line is a candidate"
+    );
     assert!(states[0]["state"].as_str().unwrap().contains("needle"));
 }
 
@@ -607,7 +637,10 @@ fn color_always_emits_ansi_and_json_never_does() {
     // Piped stdout + auto -> no color.
     let r = run(&args, &cache_env, None);
     assert_eq!(r.code, 0);
-    assert!(!r.stdout.contains("\x1b["), "auto must not color when piped");
+    assert!(
+        !r.stdout.contains("\x1b["),
+        "auto must not color when piped"
+    );
     // --color=always -> colored.
     let r = run(
         &[args.as_slice(), &["--color", "always"]].concat(),
@@ -615,8 +648,16 @@ fn color_always_emits_ansi_and_json_never_does() {
         None,
     );
     assert_eq!(r.code, 0);
-    assert!(r.stdout.contains("\x1b["), "always must color: {:?}", r.stdout);
-    assert!(r.stdout.contains("\x1b[1;31mneedle\x1b[0m"), "body must highlight keywords: {:?}", r.stdout);
+    assert!(
+        r.stdout.contains("\x1b["),
+        "always must color: {:?}",
+        r.stdout
+    );
+    assert!(
+        r.stdout.contains("\x1b[1;31mneedle\x1b[0m"),
+        "body must highlight keywords: {:?}",
+        r.stdout
+    );
     // --color=never -> explicit off.
     let r = run(
         &[args.as_slice(), &["--color", "never"]].concat(),
@@ -670,5 +711,9 @@ fn live_laya_studio() {
         None,
     );
     assert_eq!(r.code, 0, "stderr: {}", r.stderr);
-    assert!(r.stdout.contains("Print a greeting"), "stdout: {}", r.stdout);
+    assert!(
+        r.stdout.contains("Print a greeting"),
+        "stdout: {}",
+        r.stdout
+    );
 }

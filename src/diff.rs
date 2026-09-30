@@ -190,7 +190,10 @@ index 1111111..2222222 100644
 
     #[test]
     fn parses_plain_diff() {
-        let plain = SAMPLE.split_once("diff --git").map(|(_, rest)| format!("diff --git{rest}")).unwrap();
+        let plain = SAMPLE
+            .split_once("diff --git")
+            .map(|(_, rest)| format!("diff --git{rest}"))
+            .unwrap();
         let hunks = parse_stream(&plain);
         assert_eq!(hunks.len(), 1);
         assert!(hunks[0].commit.is_none());

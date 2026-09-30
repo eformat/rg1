@@ -51,11 +51,12 @@ pub fn offline(args: &Args, prefilter: &Prefilter) -> Result<i32> {
         })
         .collect();
 
-    let api_base = args
-        .api
-        .clone()
-        .unwrap_or_else(|| DEFAULT_API.to_string());
-    let cache = if args.no_cache { None } else { Cache::open_default() };
+    let api_base = args.api.clone().unwrap_or_else(|| DEFAULT_API.to_string());
+    let cache = if args.no_cache {
+        None
+    } else {
+        Cache::open_default()
+    };
 
     let mut cached = 0u64;
     let mut est: u64 = 0;
@@ -85,7 +86,9 @@ pub fn offline(args: &Args, prefilter: &Prefilter) -> Result<i32> {
         crate::cli::InputMode::Lines => "lines".to_string(),
         crate::cli::InputMode::Para => "para".to_string(),
         crate::cli::InputMode::Whole => "whole".to_string(),
-        crate::cli::InputMode::Chunks { size, overlap } => format!("chunks({size}, overlap {overlap})"),
+        crate::cli::InputMode::Chunks { size, overlap } => {
+            format!("chunks({size}, overlap {overlap})")
+        }
         crate::cli::InputMode::Jsonl => "jsonl".to_string(),
         crate::cli::InputMode::Csv => "csv".to_string(),
         crate::cli::InputMode::Diff => "diff".to_string(),
@@ -95,7 +98,9 @@ pub fn offline(args: &Args, prefilter: &Prefilter) -> Result<i32> {
     println!("mode: {mode_str}  prefilter: {}", prefilter.describe());
     println!(
         "files: {}  records: {}  candidates: {}  blank: {blanks}",
-        prepared.files_read, prepared.total, records.len()
+        prepared.files_read,
+        prepared.total,
+        records.len()
     );
     println!(
         "unique states: {}  batches: {batches} (batch-size {})",

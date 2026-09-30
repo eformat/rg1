@@ -73,7 +73,11 @@ impl Prefilter {
                         Some(note),
                     ));
                 }
-                let alternation = words.iter().map(|w| regex::escape(w)).collect::<Vec<_>>().join("|");
+                let alternation = words
+                    .iter()
+                    .map(|w| regex::escape(w))
+                    .collect::<Vec<_>>()
+                    .join("|");
                 // Separators, not \b: `_` counts as a separator so keywords match
                 // inside identifiers like Handle_User_Login (recall-first: the
                 // decision engine provides precision).
@@ -140,7 +144,11 @@ pub fn highlight_regex(descriptions: &[String]) -> Option<Regex> {
     if words.is_empty() {
         return None;
     }
-    let alternation = words.iter().map(|w| regex::escape(w)).collect::<Vec<_>>().join("|");
+    let alternation = words
+        .iter()
+        .map(|w| regex::escape(w))
+        .collect::<Vec<_>>()
+        .join("|");
     RegexBuilder::new(&format!(r"(?:{alternation})"))
         .case_insensitive(true)
         .size_limit(4 << 20)
@@ -160,8 +168,8 @@ mod tests {
 
     #[test]
     fn empty_after_stopwords_degrades() {
-        let (p, note) = Prefilter::new(Mode::Keywords, &["the of and".to_string()].to_vec())
-            .unwrap();
+        let (p, note) =
+            Prefilter::new(Mode::Keywords, &["the of and".to_string()].to_vec()).unwrap();
         assert_eq!(p.mode, Mode::All);
         assert!(note.is_some());
         assert!(p.is_match("anything"));
@@ -170,11 +178,8 @@ mod tests {
 
     #[test]
     fn keywords_match_case_insensitively() {
-        let (p, _) = Prefilter::new(
-            Mode::Keywords,
-            &["handle user login".to_string()].to_vec(),
-        )
-        .unwrap();
+        let (p, _) =
+            Prefilter::new(Mode::Keywords, &["handle user login".to_string()].to_vec()).unwrap();
         assert!(p.is_match("def Handle_User_Login():"));
         assert!(!p.is_match("total = a + b"));
         assert!(p.line_pattern().contains("login"));

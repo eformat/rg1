@@ -278,7 +278,10 @@ impl Args {
             self.functions,
         ];
         if modes.iter().filter(|m| **m).count() > 1 {
-            return Err("--para/--whole/--chunks/--jsonl/--csv/--diff/--functions are mutually exclusive".to_string());
+            return Err(
+                "--para/--whole/--chunks/--jsonl/--csv/--diff/--functions are mutually exclusive"
+                    .to_string(),
+            );
         }
         if self.field.is_some() && !self.csv && !self.jsonl {
             return Err("--field requires --csv or --jsonl".to_string());
@@ -316,7 +319,10 @@ impl Args {
             return Err("--estimate and --emit-records are mutually exclusive".to_string());
         }
         if (self.estimate || self.emit_records) && (self.quiet || self.json || self.record) {
-            return Err("--estimate/--emit-records are offline modes and do not take output flags".to_string());
+            return Err(
+                "--estimate/--emit-records are offline modes and do not take output flags"
+                    .to_string(),
+            );
         }
         Ok(())
     }

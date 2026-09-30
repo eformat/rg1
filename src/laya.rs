@@ -61,12 +61,20 @@ impl Laya {
             });
         }
         if instructions.len() > MAX_QUESTIONS {
-            bail!("too many descriptions ({}, max {MAX_QUESTIONS})", instructions.len());
+            bail!(
+                "too many descriptions ({}, max {MAX_QUESTIONS})",
+                instructions.len()
+            );
         }
         let questions: serde_json::Map<String, serde_json::Value> = instructions
             .iter()
             .enumerate()
-            .map(|(i, ins)| (format!("d{i}"), json!({"type": "noul", "instructions": ins})))
+            .map(|(i, ins)| {
+                (
+                    format!("d{i}"),
+                    json!({"type": "noul", "instructions": ins}),
+                )
+            })
             .collect();
         let questions = serde_json::Value::Object(questions);
 
@@ -103,7 +111,8 @@ impl Laya {
             "questions": questions,
         });
         let resp = self.send(&url, &body).await?;
-        let value: serde_json::Value = serde_json::from_str(&resp).map_err(|e| anyhow!("invalid JSON from batch endpoint: {e}"))?;
+        let value: serde_json::Value = serde_json::from_str(&resp)
+            .map_err(|e| anyhow!("invalid JSON from batch endpoint: {e}"))?;
         parse_batch_response(&value, states.len(), instructions_count(questions))
     }
 
@@ -161,12 +170,7 @@ impl Laya {
         let mut attempt = 0;
         loop {
             attempt += 1;
-            let result = self
-                .http
-                .post(url)
-                .json(body)
-                .send()
-                .await;
+            let result = self.http.post(url).json(body).send().await;
             match result {
                 Ok(resp) => {
                     let status = resp.status();
@@ -199,8 +203,10 @@ impl Laya {
                         if attempt >= MAX_ATTEMPTS {
                             bail!("laya error: {e} after {MAX_ATTEMPTS} attempts ({url})");
                         }
-                        tokio::time::sleep(Duration::from_millis(250 * (1 << (attempt - 1)).min(8)))
-                            .await;
+                        tokio::time::sleep(Duration::from_millis(
+                            250 * (1 << (attempt - 1)).min(8),
+                        ))
+                        .await;
                         continue;
                     }
                     bail!("laya error: {e} ({url})");
@@ -250,17 +256,17 @@ fn parse_batch_response(
     Ok(AskOutcome { probs, usage })
 }
 
-fn parse_single_response(value: &serde_json::Value, n_questions: usize) -> Result<Vec<Option<f64>>> {
+fn parse_single_response(
+    value: &serde_json::Value,
+    n_questions: usize,
+) -> Result<Vec<Option<f64>>> {
     let answers = value
         .get("answers")
         .ok_or_else(|| anyhow!("response missing 'answers'"))?;
     Ok(parse_answers(Some(answers), n_questions))
 }
 
-fn parse_answers(
-    answers: Option<&serde_json::Value>,
-    n_questions: usize,
-) -> Vec<Option<f64>> {
+fn parse_answers(answers: Option<&serde_json::Value>, n_questions: usize) -> Vec<Option<f64>> {
     let mut out = vec![None; n_questions];
     if let Some(map) = answers.and_then(|a| a.as_object()) {
         for (qid, v) in map {

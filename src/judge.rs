@@ -111,21 +111,17 @@ pub async fn run(args: Args) -> Result<i32> {
     stats.blank_skipped = set.blanks;
     stats.unique_states = states.len() as u64;
 
-    let api_base = args
-        .api
-        .clone()
-        .unwrap_or_else(|| DEFAULT_API.to_string());
-    let cache = if args.no_cache { None } else { Cache::open_default() };
+    let api_base = args.api.clone().unwrap_or_else(|| DEFAULT_API.to_string());
+    let cache = if args.no_cache {
+        None
+    } else {
+        Cache::open_default()
+    };
 
     // Per-state instructions (one noul question per description).
     let ins: Vec<Vec<String>> = templates
         .iter()
-        .map(|&(k, marked)| {
-            descs
-                .iter()
-                .map(|d| instructions(k, marked, d))
-                .collect()
-        })
+        .map(|&(k, marked)| descs.iter().map(|d| instructions(k, marked, d)).collect())
         .collect();
 
     let mut probs: Vec<Vec<Option<f64>>> = vec![vec![None; descs.len()]; states.len()];
@@ -229,7 +225,11 @@ pub async fn run(args: Args) -> Result<i32> {
             let budget = args.budget;
             async move {
                 if uncached.is_empty() {
-                    return (idxs, uncached, Ok(BatchOutcome::Done(Vec::new(), Usage::default())));
+                    return (
+                        idxs,
+                        uncached,
+                        Ok(BatchOutcome::Done(Vec::new(), Usage::default())),
+                    );
                 }
                 // Reserve the estimated cost before sending so concurrent
                 // in-flight requests cannot overshoot the budget.
@@ -346,9 +346,7 @@ pub async fn run(args: Args) -> Result<i32> {
                 }
             }
             if let Some(mc) = args.max_count {
-                let all_saturated = counts
-                    .values()
-                    .all(|&c| c >= mc)
+                let all_saturated = counts.values().all(|&c| c >= mc)
                     && counts.len() >= files_with_records(&rec_state, &records);
                 if all_saturated && !counts.is_empty() {
                     break 'groups;
@@ -379,9 +377,8 @@ pub async fn run(args: Args) -> Result<i32> {
         stats.matches += 1;
         matched = true;
         if !args.quiet && !args.count && !args.files_with_matches {
-            let answers: BTreeMap<String, f64> = (0..descs.len())
-                .map(|j| (format!("d{j}"), 0.0))
-                .collect();
+            let answers: BTreeMap<String, f64> =
+                (0..descs.len()).map(|j| (format!("d{j}"), 0.0)).collect();
             if multi_group {
                 deferred.push((ri, p, answers));
             } else if !emitter.emit(rec, p, &answers) {
@@ -401,8 +398,8 @@ pub async fn run(args: Args) -> Result<i32> {
     }
 
     if (args.count || args.files_with_matches) && !args.quiet {
-        let stdin_only = args.paths.is_empty()
-            || (args.paths.len() == 1 && args.paths[0].as_os_str() == "-");
+        let stdin_only =
+            args.paths.is_empty() || (args.paths.len() == 1 && args.paths[0].as_os_str() == "-");
         if stdin_only && counts.len() <= 1 {
             let total = counts.values().sum::<usize>();
             emit::emit_total(total, args.files_with_matches);
@@ -431,7 +428,8 @@ fn painter_for_counts(args: &Args) -> crate::color::Painter {
     crate::color::Painter::new(args.color)
 }
 
-fn show_path(args: &Args, records: &[Record]) -> bool {    if args.no_filename {
+fn show_path(args: &Args, records: &[Record]) -> bool {
+    if args.no_filename {
         return false;
     }
     let has_stdin = args.paths.is_empty() || args.paths.iter().any(|p| p.as_os_str() == "-");
@@ -442,7 +440,10 @@ fn show_path(args: &Args, records: &[Record]) -> bool {    if args.no_filename {
         return false;
     }
     // Multiple distinct paths -> show filenames (grep convention).
-    let mut distinct: Vec<_> = records.iter().map(|r| r.display_path().to_string()).collect();
+    let mut distinct: Vec<_> = records
+        .iter()
+        .map(|r| r.display_path().to_string())
+        .collect();
     distinct.sort();
     distinct.dedup();
     distinct.len() > 1

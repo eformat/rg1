@@ -72,7 +72,12 @@ impl Emitter {
         writeln!(self.out)
     }
 
-    fn emit_json(&mut self, rec: &Record, p: f64, answers: &BTreeMap<String, f64>) -> std::io::Result<()> {
+    fn emit_json(
+        &mut self,
+        rec: &Record,
+        p: f64,
+        answers: &BTreeMap<String, f64>,
+    ) -> std::io::Result<()> {
         use serde_json::json;
         let path = rec.path.as_ref().map(|p| p.display().to_string());
         if self.record {
@@ -140,7 +145,12 @@ pub fn emit_counts(counts: &BTreeMap<String, usize>, with_files: bool, painter: 
         if with_files {
             let _ = writeln!(out, "{}", painter.path(path));
         } else {
-            let _ = writeln!(out, "{}:{}", painter.path(path), painter.line_no(&count.to_string()));
+            let _ = writeln!(
+                out,
+                "{}:{}",
+                painter.path(path),
+                painter.line_no(&count.to_string())
+            );
         }
     }
 }

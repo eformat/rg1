@@ -93,7 +93,10 @@ pub fn enclosing_function(
     if fns.is_empty() {
         return Err(SYNTAX_ERROR);
     }
-    let Some(f) = fns.into_iter().find(|f| f.start <= target_line && target_line <= f.end) else {
+    let Some(f) = fns
+        .into_iter()
+        .find(|f| f.start <= target_line && target_line <= f.end)
+    else {
         return Err(OUTSIDE_FUNCTION);
     };
     if f.end - f.start + 1 == 0 {
@@ -116,6 +119,9 @@ mod tests {
             read_blob(repo, "abc123", "../../etc/passwd"),
             Err(SOURCE_MISMATCH)
         );
-        assert_eq!(read_blob(repo, "abc123", "/etc/passwd"), Err(SOURCE_MISMATCH));
+        assert_eq!(
+            read_blob(repo, "abc123", "/etc/passwd"),
+            Err(SOURCE_MISMATCH)
+        );
     }
 }

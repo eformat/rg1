@@ -52,7 +52,10 @@ impl Stats {
             lines.push(format!("binary files skipped: {}", self.binary_skipped));
         }
         if self.blank_skipped > 0 {
-            lines.push(format!("blank records short-circuited: {}", self.blank_skipped));
+            lines.push(format!(
+                "blank records short-circuited: {}",
+                self.blank_skipped
+            ));
         }
         if !self.ctx_fallbacks.is_empty() {
             let parts: Vec<String> = self

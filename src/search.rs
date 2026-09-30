@@ -35,7 +35,10 @@ impl Sink for HitSink<'_> {
         let line = String::from_utf8_lossy(mat.bytes());
         self.hits.push(LineHit {
             line_number: mat.line_number().unwrap_or(0),
-            line: line.trim_end_matches('\n').trim_end_matches('\r').to_string(),
+            line: line
+                .trim_end_matches('\n')
+                .trim_end_matches('\r')
+                .to_string(),
         });
         Ok(true)
     }

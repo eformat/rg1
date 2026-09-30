@@ -29,7 +29,10 @@ pub struct Prepared {
 
 enum Source {
     /// A regular file's content (path None = stdin).
-    Text { path: Option<PathBuf>, content: String },
+    Text {
+        path: Option<PathBuf>,
+        content: String,
+    },
     /// A unified-diff stream (git log -p / format-patch / plain diff).
     Diff {
         path: Option<PathBuf>,
@@ -72,28 +75,36 @@ pub fn prepare(args: &Args, filter: Option<&Prefilter>) -> Result<Prepared> {
                 p.files_read += 1;
                 match mode {
                     InputMode::Lines => lines_records(args, &path, &content, filter, &mut p),
-                    InputMode::Para => {
-                        para_records(&path, &content, filter, &mut p)
-                    }
+                    InputMode::Para => para_records(&path, &content, filter, &mut p),
                     InputMode::Whole => {
                         text_records(&path, &content, RecordKind::Whole, filter, &mut p)
                     }
                     InputMode::Chunks { size, overlap } => {
                         chunk_records(&path, &content, size, overlap, filter, &mut p)
                     }
-                    InputMode::Jsonl => {
-                        crate::data::jsonl_records(&path, &content, args.field.as_deref(), filter, &mut p)
-                    }
-                    InputMode::Csv => {
-                        crate::data::csv_records(&path, &content, args.field.as_deref(), filter, &mut p)
-                    }
-                    InputMode::Functions => {
-                        function_records(args, &path, &content, filter, &mut p)
-                    }
+                    InputMode::Jsonl => crate::data::jsonl_records(
+                        &path,
+                        &content,
+                        args.field.as_deref(),
+                        filter,
+                        &mut p,
+                    ),
+                    InputMode::Csv => crate::data::csv_records(
+                        &path,
+                        &content,
+                        args.field.as_deref(),
+                        filter,
+                        &mut p,
+                    ),
+                    InputMode::Functions => function_records(args, &path, &content, filter, &mut p),
                     InputMode::Diff => unreachable!("diff sources are handled separately"),
                 }
             }
-            Source::Diff { path, content, repo } => {
+            Source::Diff {
+                path,
+                content,
+                repo,
+            } => {
                 p.files_read += 1;
                 diff_records(args, &path, &content, repo, filter, &mut p);
             }
@@ -111,12 +122,18 @@ fn gather(args: &Args, mode: &InputMode) -> Result<Vec<Source>> {
             InputMode::Diff => sources.push(Source::Diff {
                 path: None,
                 content,
-                repo: args.repo.clone().or_else(|| gitctx::find_repo(&std::env::current_dir().unwrap_or_default())),
+                repo: args
+                    .repo
+                    .clone()
+                    .or_else(|| gitctx::find_repo(&std::env::current_dir().unwrap_or_default())),
             }),
             InputMode::Functions => {
                 bail!("no input files for --functions (pass paths on the command line)");
             }
-            _ => sources.push(Source::Text { path: None, content }),
+            _ => sources.push(Source::Text {
+                path: None,
+                content,
+            }),
         }
         return Ok(sources);
     }
@@ -128,10 +145,15 @@ fn gather(args: &Args, mode: &InputMode) -> Result<Vec<Source>> {
                 sources.push(Source::Diff {
                     path: None,
                     content,
-                    repo: args.repo.clone().or_else(|| gitctx::find_repo(&std::env::current_dir().unwrap_or_default())),
+                    repo: args.repo.clone().or_else(|| {
+                        gitctx::find_repo(&std::env::current_dir().unwrap_or_default())
+                    }),
                 });
             } else {
-                sources.push(Source::Text { path: None, content });
+                sources.push(Source::Text {
+                    path: None,
+                    content,
+                });
             }
             continue;
         }
@@ -221,7 +243,9 @@ fn walk_dir(args: &Args, root: &Path) -> Vec<PathBuf> {
             p_note_walk();
             continue;
         };
-        let Some(ft) = entry.file_type() else { continue };
+        let Some(ft) = entry.file_type() else {
+            continue;
+        };
         if !ft.is_file() || ft.is_symlink() {
             continue;
         }
@@ -246,7 +270,11 @@ fn read_text(path: &Path) -> Option<String> {
         }
     };
     if meta.len() > MAX_FILE_BYTES {
-        note(&format!("{}: file too large ({} bytes, max {MAX_FILE_BYTES}); skipping", path.display(), meta.len()));
+        note(&format!(
+            "{}: file too large ({} bytes, max {MAX_FILE_BYTES}); skipping",
+            path.display(),
+            meta.len()
+        ));
         return None;
     }
     let bytes = match std::fs::read(path) {
@@ -275,7 +303,13 @@ fn read_stdin() -> Result<String> {
 }
 
 /// Line-mode records via the ripgrep engine; `-C` builds a marked context state.
-fn lines_records(args: &Args, path: &Option<PathBuf>, content: &str, filter: Option<&Prefilter>, p: &mut Prepared) {
+fn lines_records(
+    args: &Args,
+    path: &Option<PathBuf>,
+    content: &str,
+    filter: Option<&Prefilter>,
+    p: &mut Prepared,
+) {
     let pattern = match filter {
         Some(pf) => pf.line_pattern().to_string(),
         None => crate::prefilter::MATCH_ALL.to_string(),
@@ -401,7 +435,9 @@ fn function_records(
     p: &mut Prepared,
 ) {
     let Some(path) = path else { return };
-    let Some(lang) = code::lang_for_path(path) else { return };
+    let Some(lang) = code::lang_for_path(path) else {
+        return;
+    };
     for f in code::extract_functions(content, lang) {
         p.total += 1;
         if f.body.chars().count() > args.max_chars {
@@ -415,7 +451,13 @@ fn function_records(
             p.errors += 1;
             continue;
         }
-        let mut rec = Record::new(Some(path.clone()), RecordKind::Function, f.start, f.end, f.body);
+        let mut rec = Record::new(
+            Some(path.clone()),
+            RecordKind::Function,
+            f.start,
+            f.end,
+            f.body,
+        );
         rec.state = Some(rec.body.clone());
         if let Some(pf) = filter {
             if !pf.is_match(&rec.body) {
@@ -480,24 +522,28 @@ fn diff_records(
 }
 
 /// `-W`: attach enclosing-function context from the post-image git blob.
-fn attach_w_context(
-    args: &Args,
-    rec: &mut Record,
-    repo: Option<&Path>,
-    p: &mut Prepared,
-) {
+fn attach_w_context(args: &Args, rec: &mut Record, repo: Option<&Path>, p: &mut Prepared) {
     let Some(meta) = rec.hunk.clone() else { return };
     if meta.is_deleted {
         // Deleted files have no post-image blob to read.
-        p.ctx_fallbacks.entry(gitctx::DELETED_FILE).and_modify(|c| *c += 1).or_insert(1);
+        p.ctx_fallbacks
+            .entry(gitctx::DELETED_FILE)
+            .and_modify(|c| *c += 1)
+            .or_insert(1);
         return;
     }
     let Some(repo) = repo else {
-        p.ctx_fallbacks.entry("no_git_repo").and_modify(|c| *c += 1).or_insert(1);
+        p.ctx_fallbacks
+            .entry("no_git_repo")
+            .and_modify(|c| *c += 1)
+            .or_insert(1);
         return;
     };
     let Some(commit) = &meta.commit else {
-        p.ctx_fallbacks.entry("no_commit").and_modify(|c| *c += 1).or_insert(1);
+        p.ctx_fallbacks
+            .entry("no_commit")
+            .and_modify(|c| *c += 1)
+            .or_insert(1);
         return;
     };
     // First changed line in the post image (where the edit actually is).
@@ -519,7 +565,10 @@ fn attach_w_context(
             }
         }
         Err(reason) => {
-            p.ctx_fallbacks.entry(reason).and_modify(|c| *c += 1).or_insert(1);
+            p.ctx_fallbacks
+                .entry(reason)
+                .and_modify(|c| *c += 1)
+                .or_insert(1);
         }
     }
 }
