@@ -60,7 +60,7 @@ cargo install --path .   # or: cargo build --release / make install
 
 ## The decision engine
 
-By default `rg1` talks to **laya-studio** ("decision 1" / systemone API):
+By default `rg1` talks to [**laya-studio**](https://github.com/eformat/laya-studio) ("decision 1" / systemone API):
 an encoder-based typed-decision engine — one forward pass per record, no text
 generation. Override with `--api` (any endpoint speaking the
 `{model, state, questions}` protocol at `/v1/systemone[/batches]`):
@@ -111,7 +111,8 @@ The pattern is a description; PATHs are files or directories (default: stdin;
 |---|---|
 | `-n` | line numbers |
 | `-H` / `--no-filename` | force/suppress filenames |
-| `-o` | probability column: `0.918\ttext` |
+| `-o` | probability column, **default on** — shows the decision engine's judgment (graded colors with `--color`) |
+| `--no-probability` | disable the probability column |
 | `-c` / `-l` | counts / files-with-matches |
 | `-q` | exit status only |
 | `--json` | one JSON object per match |
