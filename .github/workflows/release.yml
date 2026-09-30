@@ -35,10 +35,11 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-latest
             test: false
-          # macOS x86_64 (Intel): macos-13 is the last Intel runner
-          - target: x86_64-apple-darwin
-            os: macos-13
-            test: false
+          # macOS x86_64 (Intel): disabled — macos-13 builds take too long.
+          # Re-enable if Intel mac binaries are ever needed:
+          # - target: x86_64-apple-darwin
+          #   os: macos-13
+          #   test: false
           # Linux ARM64 (optional): needs the free `ubuntu-24.04-arm` runner,
           # which is available for public repositories. Uncomment to enable:
           # - target: aarch64-unknown-linux-gnu
