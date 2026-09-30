@@ -173,7 +173,9 @@ pub async fn run(args: Args) -> Result<i32> {
     let highlight = crate::prefilter::highlight_regex(&descs);
 
     let mut emitter = Emitter::new(
-        args.show_probability,
+        // -o defaults on; --no-probability turns it off (belt and braces with
+        // the clap conflict).
+        args.show_probability && !args.no_probability,
         args.line_number,
         args.json,
         args.record,

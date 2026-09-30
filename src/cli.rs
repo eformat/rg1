@@ -97,9 +97,14 @@ pub struct Args {
     #[arg(long = "no-filename")]
     pub no_filename: bool,
 
-    /// Print the probability column instead of only the matched text
-    #[arg(short = 'o', long = "show-probability")]
+    /// Print the probability column (default on; shows the decision engine's
+    /// judgment for each record)
+    #[arg(short = 'o', long = "show-probability", default_value_t = true)]
     pub show_probability: bool,
+
+    /// Disable the probability column (plain grep-style output)
+    #[arg(long = "no-probability", conflicts_with = "show_probability")]
+    pub no_probability: bool,
 
     /// Print match counts per file
     #[arg(short = 'c', long = "count")]

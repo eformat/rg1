@@ -161,7 +161,11 @@ fn prefilter_defaults_to_keywords() {
     let server = mock_server(&rt, "needle");
     let (_c, cache_env) = fresh_cache();
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("a.txt"), "has the needle here\nnothing to see\n").unwrap();
+    std::fs::write(
+        dir.path().join("a.txt"),
+        "has the needle here\nnothing to see\n",
+    )
+    .unwrap();
     // No --prefilter flag: defaults to keywords (only the needle line judged).
     let r = run(
         &[
@@ -174,13 +178,23 @@ fn prefilter_defaults_to_keywords() {
         None,
     );
     assert_eq!(r.code, 0, "stderr: {}", r.stderr);
-    assert!(r.stdout.contains("has the needle here"), "stdout: {}", r.stdout);
+    assert!(
+        r.stdout.contains("has the needle here"),
+        "stdout: {}",
+        r.stdout
+    );
     assert!(!r.stdout.contains("nothing to see"));
-    let received = rt.block_on(async { server.received_requests().await }).unwrap();
+    let received = rt
+        .block_on(async { server.received_requests().await })
+        .unwrap();
     assert_eq!(received.len(), 1);
     let body: Value = serde_json::from_slice(&received[0].body).unwrap();
     let states = body["states"].as_array().unwrap();
-    assert_eq!(states.len(), 1, "default prefilter=keywords: only the needle line is a candidate");
+    assert_eq!(
+        states.len(),
+        1,
+        "default prefilter=keywords: only the needle line is a candidate"
+    );
     assert!(states[0]["state"].as_str().unwrap().contains("needle"));
 }
 
@@ -704,6 +718,36 @@ fn color_always_emits_ansi_and_json_never_does() {
         None,
     );
     assert!(!r.stdout.contains("\x1b["), "json must never be colored");
+}
+
+#[test]
+fn probability_column_defaults_on() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let server = mock_server(&rt, "needle");
+    let (_c, cache_env) = fresh_cache();
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("a.txt"), "has the needle here\n").unwrap();
+    let base = [
+        "needle in the haystack",
+        "--prefilter",
+        "keywords",
+        "--api",
+        &server.uri(),
+        dir.path().to_str().unwrap(),
+    ];
+    // Default: probability column shown (proof the decision engine judged it).
+    let r = run(&base, &cache_env, None);
+    assert_eq!(r.code, 0, "stderr: {}", r.stderr);
+    assert!(r.stdout.contains("0.900\t"), "stdout: {:?}", r.stdout);
+    // --no-probability: plain grep-style output.
+    let r = run(
+        &[base.as_slice(), &["--no-probability"]].concat(),
+        &cache_env,
+        None,
+    );
+    assert_eq!(r.code, 0);
+    assert!(!r.stdout.contains("0.900"), "stdout: {:?}", r.stdout);
+    assert!(r.stdout.contains("has the needle here"));
 }
 
 #[test]
