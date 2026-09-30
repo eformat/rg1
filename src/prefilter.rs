@@ -133,6 +133,21 @@ pub fn keywords(descriptions: &[String]) -> Vec<String> {
     v
 }
 
+/// Case-insensitive word alternation for output highlighting (no separators;
+/// boundary checks happen at highlight time so separators are preserved).
+pub fn highlight_regex(descriptions: &[String]) -> Option<Regex> {
+    let words = keywords(descriptions);
+    if words.is_empty() {
+        return None;
+    }
+    let alternation = words.iter().map(|w| regex::escape(w)).collect::<Vec<_>>().join("|");
+    RegexBuilder::new(&format!(r"(?:{alternation})"))
+        .case_insensitive(true)
+        .size_limit(4 << 20)
+        .build()
+        .ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

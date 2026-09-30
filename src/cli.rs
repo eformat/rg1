@@ -1,5 +1,6 @@
 //! CLI definition and validation.
 
+use crate::color::ColorWhen;
 use crate::record::RecordKind;
 use clap::{Parser, ValueEnum};
 
@@ -195,6 +196,10 @@ pub struct Args {
     /// (parity with grep; directories are always walked recursively)
     #[arg(short = 'r', long = "recursive")]
     pub recursive: bool,
+
+    /// When to color output: auto (terminal only), always, or never
+    #[arg(long, value_enum, default_value_t = ColorWhen::Auto)]
+    pub color: ColorWhen,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]

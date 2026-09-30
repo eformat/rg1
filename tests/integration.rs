@@ -588,6 +588,62 @@ fn count_and_files_with_matches() {
 }
 
 #[test]
+fn color_always_emits_ansi_and_json_never_does() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let server = mock_server(&rt, "needle");
+    let (_c, cache_env) = fresh_cache();
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("a.txt"), "has the needle here\n").unwrap();
+    let args = [
+        "needle in the haystack",
+        "--prefilter",
+        "keywords",
+        "-n",
+        "-o",
+        "--api",
+        &server.uri(),
+        dir.path().to_str().unwrap(),
+    ];
+    // Piped stdout + auto -> no color.
+    let r = run(&args, &cache_env, None);
+    assert_eq!(r.code, 0);
+    assert!(!r.stdout.contains("\x1b["), "auto must not color when piped");
+    // --color=always -> colored.
+    let r = run(
+        &[args.as_slice(), &["--color", "always"]].concat(),
+        &cache_env,
+        None,
+    );
+    assert_eq!(r.code, 0);
+    assert!(r.stdout.contains("\x1b["), "always must color: {:?}", r.stdout);
+    assert!(r.stdout.contains("\x1b[1;31mneedle\x1b[0m"), "body must highlight keywords: {:?}", r.stdout);
+    // --color=never -> explicit off.
+    let r = run(
+        &[args.as_slice(), &["--color", "never"]].concat(),
+        &cache_env,
+        None,
+    );
+    assert!(!r.stdout.contains("\x1b["));
+    // --json is machine-readable: never colored.
+    let r = run(
+        &[
+            "needle in the haystack",
+            "--prefilter",
+            "keywords",
+            "--json",
+            "--color",
+            "always",
+            "--api",
+            &server.uri(),
+            dir.path().to_str().unwrap(),
+        ],
+        &cache_env,
+        None,
+    );
+    assert!(!r.stdout.contains("\x1b["), "json must never be colored");
+}
+
+#[test]
 fn live_laya_studio() {
     if std::env::var("RUN_LIVE").ok().as_deref() != Some("1") {
         eprintln!("skipping live test (set RUN_LIVE=1)");

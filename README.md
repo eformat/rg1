@@ -1,6 +1,6 @@
 # rg1
 
-**grep, but the pattern is a description.**
+**ripgrep, but the pattern is a description.**
 
 `rg1` wraps [ripgrep](https://github.com/BurntSushi/ripgrep)'s engine (its
 `grep-regex`/`grep-searcher`/`ignore` crates, linked in-process — no `rg`
@@ -105,6 +105,7 @@ The pattern is a description; PATHs are files or directories (default: stdin;
 | `--json` | one JSON object per match |
 | `--record` | JSON with full record metadata (incl. diff hunk info) |
 | `-m N` | stop after N matches per file |
+| `--color auto\|always\|never` | color output (default `auto`: terminal + no `NO_COLOR`); magenta paths, green line numbers, graded probability (≥0.9 bold green / ≥0.7 green / else yellow), red-bold description keywords in bodies |
 
 ### Economics & runtime
 
@@ -187,6 +188,7 @@ src/
   judge.rs     states -> cache -> concurrent batches -> ordered decisions
   cache.rs     SQLite answer cache
   emit.rs      grep-compatible output
+  color.rs     ANSI painter (--color auto|always|never, NO_COLOR-aware)
   estimate.rs  --estimate / --emit-records
   stats.rs     run statistics + token-budget accounting
 ```

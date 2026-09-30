@@ -168,12 +168,22 @@ pub async fn run(args: Args) -> Result<i32> {
     let mut broken = false;
     let mut budget_halted = false;
 
+    // Colors: JSON/record output is machine-readable and never colored.
+    let painter = if args.json || args.record {
+        crate::color::Painter::disabled()
+    } else {
+        crate::color::Painter::new(args.color)
+    };
+    let highlight = crate::prefilter::highlight_regex(&descs);
+
     let mut emitter = Emitter::new(
         args.show_probability,
         args.line_number,
         args.json,
         args.record,
         show_path(&args, &records),
+        painter,
+        highlight,
     );
 
     'groups: for tid in &group_order {
@@ -397,7 +407,7 @@ pub async fn run(args: Args) -> Result<i32> {
             let total = counts.values().sum::<usize>();
             emit::emit_total(total, args.files_with_matches);
         } else {
-            emit::emit_counts(&counts, args.files_with_matches);
+            emit::emit_counts(&counts, args.files_with_matches, &painter_for_counts(&args));
         }
     }
 
@@ -417,8 +427,11 @@ pub async fn run(args: Args) -> Result<i32> {
     Ok(if matched { 0 } else { 1 })
 }
 
-fn show_path(args: &Args, records: &[Record]) -> bool {
-    if args.no_filename {
+fn painter_for_counts(args: &Args) -> crate::color::Painter {
+    crate::color::Painter::new(args.color)
+}
+
+fn show_path(args: &Args, records: &[Record]) -> bool {    if args.no_filename {
         return false;
     }
     let has_stdin = args.paths.is_empty() || args.paths.iter().any(|p| p.as_os_str() == "-");

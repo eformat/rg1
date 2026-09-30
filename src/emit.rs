@@ -1,7 +1,9 @@
 //! grep-compatible output: plain, `-o` probability column, `--json`, counts,
 //! filenames. Results stream in input order.
 
+use crate::color::Painter;
 use crate::record::Record;
+use regex::Regex;
 use std::collections::BTreeMap;
 use std::io::{BufWriter, Write};
 
@@ -12,6 +14,8 @@ pub struct Emitter {
     show_probability: bool,
     json: bool,
     record: bool,
+    painter: Painter,
+    highlight: Option<Regex>,
 }
 
 impl Emitter {
@@ -21,6 +25,8 @@ impl Emitter {
         json: bool,
         record: bool,
         show_path: bool,
+        painter: Painter,
+        highlight: Option<Regex>,
     ) -> Self {
         Emitter {
             out: BufWriter::new(std::io::stdout()),
@@ -29,6 +35,8 @@ impl Emitter {
             show_probability,
             json,
             record,
+            painter,
+            highlight,
         }
     }
 
@@ -51,11 +59,11 @@ impl Emitter {
 
     fn emit_plain(&mut self, rec: &Record, p: Option<f64>) -> std::io::Result<()> {
         let prefix = self.prefix(rec);
-        let body = &rec.body;
+        let body = self.painter.highlight(&rec.body, self.highlight.as_ref());
         let mut lines = body.split('\n');
         let first = lines.next().unwrap_or("");
         match p {
-            Some(p) => write!(self.out, "{prefix}{p:.3}\t{first}")?,
+            Some(p) => write!(self.out, "{prefix}{}\t{first}", self.painter.prob(p))?,
             None => write!(self.out, "{prefix}{first}")?,
         }
         for l in lines {
@@ -113,11 +121,11 @@ impl Emitter {
     fn prefix(&self, rec: &Record) -> String {
         let mut s = String::new();
         if self.show_path {
-            s.push_str(&rec.display_path());
+            s.push_str(&self.painter.path(&rec.display_path()));
             s.push(':');
         }
         if self.show_line {
-            s.push_str(&rec.start_line.to_string());
+            s.push_str(&self.painter.line_no(&rec.start_line.to_string()));
             s.push(':');
         }
         s
@@ -125,14 +133,14 @@ impl Emitter {
 }
 
 /// Print per-file match counts (`-c`) or files with matches (`-l`).
-pub fn emit_counts(counts: &BTreeMap<String, usize>, with_files: bool) {
+pub fn emit_counts(counts: &BTreeMap<String, usize>, with_files: bool, painter: &Painter) {
     let out = std::io::stdout();
     let mut out = out.lock();
     for (path, count) in counts {
         if with_files {
-            let _ = writeln!(out, "{path}");
+            let _ = writeln!(out, "{}", painter.path(path));
         } else {
-            let _ = writeln!(out, "{path}:{count}");
+            let _ = writeln!(out, "{}:{}", painter.path(path), painter.line_no(&count.to_string()));
         }
     }
 }

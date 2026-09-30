@@ -6,6 +6,7 @@
 mod cache;
 mod cli;
 mod code;
+mod color;
 mod data;
 mod diff;
 mod emit;
