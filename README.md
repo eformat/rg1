@@ -1,5 +1,7 @@
 # rg1
 
+[![ci](https://github.com/eformat/rg1/actions/workflows/ci.yml/badge.svg)](https://github.com/eformat/rg1/actions/workflows/ci.yml)
+
 **ripgrep, but the pattern is a description.**
 
 `rg1` wraps [ripgrep](https://github.com/BurntSushi/ripgrep)'s engine (its
@@ -42,8 +44,18 @@ description ──▶ keyword regex ──▶ ripgrep engine ──▶ candidate
 
 ## Install
 
+Prebuilt binaries (linux x86_64, macOS Apple Silicon + Intel) are attached to
+each [GitHub Release](https://github.com/eformat/rg1/releases) — pushing a
+`v*` tag builds and publishes them automatically with SHA256 checksums:
+
 ```sh
-cargo install --path .   # or: cargo build --release
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+Or from source:
+
+```sh
+cargo install --path .   # or: cargo build --release / make install
 ```
 
 ## The decision engine

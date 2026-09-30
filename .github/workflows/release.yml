@@ -1,0 +1,101 @@
+# Release workflow: build rg1 binaries for linux (x86_64) and macOS
+# (Apple Silicon + Intel), then attach them to a GitHub Release.
+#
+# Trigger: push a tag, e.g.  git tag v0.1.0 && git push origin v0.1.0
+# (or run manually via workflow_dispatch — artifacts only, no release).
+#
+# macOS ARM note: `macos-latest` runners ARE Apple Silicon (arm64), so the
+# aarch64-apple-darwin build is native — no osxcross/cross-compilation needed.
+# Cross-compiling macOS from Linux requires osxcross plus an Apple SDK, which
+# has licensing constraints; native runners are the standard approach.
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # linux x86_64: native build + run the test suite as a release gate
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            test: true
+          # macOS ARM64: macos-latest runners are Apple Silicon — native build
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            test: false
+          # macOS x86_64 (Intel): macos-13 is the last Intel runner
+          - target: x86_64-apple-darwin
+            os: macos-13
+            test: false
+          # Linux ARM64 (optional): needs the free `ubuntu-24.04-arm` runner,
+          # which is available for public repositories. Uncomment to enable:
+          # - target: aarch64-unknown-linux-gnu
+          #   os: ubuntu-24.04-arm
+          #   test: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: test (release gate)
+        if: matrix.test
+        run: cargo test
+
+      - name: build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: package
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          tar czf "dist/rg1-${VERSION}-${{ matrix.target }}.tar.gz" \
+            -C "target/${{ matrix.target }}/release" rg1
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rg1-${{ matrix.target }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: checksums
+        run: |
+          cd dist
+          sha256sum *.tar.gz > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/SHA256SUMS.txt
+          generate_release_notes: true

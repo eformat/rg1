@@ -1,0 +1,29 @@
+# CI: format check, lint, and tests on every push to main and every PR.
+
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: format check
+        run: cargo fmt --check
+
+      - name: clippy
+        run: cargo clippy
+
+      - name: test
+        run: cargo test
