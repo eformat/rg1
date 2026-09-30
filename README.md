@@ -44,7 +44,7 @@ description ──▶ keyword regex ──▶ ripgrep engine ──▶ candidate
 
 ## Install
 
-Prebuilt binaries (linux x86_64, macOS Apple Silicon + Intel) are attached to
+Prebuilt binaries (linux x86_64, macOS Apple Silicon) are attached to
 each [GitHub Release](https://github.com/eformat/rg1/releases) — pushing a
 `v*` tag builds and publishes them automatically with SHA256 checksums:
 
