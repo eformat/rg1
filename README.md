@@ -19,7 +19,7 @@ rg1 "python code that prints a greeting" ~/src
 src/hello.py:4:    """Print a warm greeting."""
 ```
 
-It is the Rust sibling of [jgrep](https://github.com/you/jgrep) — grep-shaped
+It is the Rust sibling of [jgrep](https://github.com/keltokhy/jgrep) — grep-shaped
 CLI, grep-shaped exit codes, but the pattern is a natural-language description
 and the match is a model's judgment, not a regex.
 
