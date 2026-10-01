@@ -166,6 +166,9 @@ git format-patch -10 --stdout | rg1 "a security fix" --diff -W --prefilter all -
 rg1 "a bug report" --prefilter all --jsonl --field issue.text logs.jsonl
 rg1 "a billing complaint" --prefilter all --csv --field message tickets.csv
 
+# multiple paths via glob expansion (bash needs: shopt -s globstar) and a higher threshold
+rg1 "python using cuda" ~/git/**/*.py -p 0.9
+
 # plan the run without spending a single call
 rg1 "refactoring comments" --prefilter keywords --estimate .
 
