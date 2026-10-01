@@ -152,6 +152,16 @@ rg1 "error handling" -e "retry logic" --prefilter all --all -o src/
 # judge commit hunks with enclosing-function context from the post-image blob
 rg1 "a commit that changes pricing math" --diff -W --prefilter all -o -H .
 
+# pipe git log -p yourself — narrow the window first (cheapest)
+git log -p --since="last week" | rg1 "a bug fix" --diff --prefilter all -o -H -n
+git log -p -- author@example.com -- src/auth/ | rg1 "credential handling" --diff -W --max-chars 50000 --prefilter all -o
+
+# uncommitted changes (plain git diff works too)
+git diff | rg1 "refactoring of the router" --diff --prefilter all -o
+
+# patch streams (format-patch)
+git format-patch -10 --stdout | rg1 "a security fix" --diff -W --prefilter all -o
+
 # JSONL fields, CSV rows
 rg1 "a bug report" --prefilter all --jsonl --field issue.text logs.jsonl
 rg1 "a billing complaint" --prefilter all --csv --field message tickets.csv
